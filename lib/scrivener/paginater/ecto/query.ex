@@ -13,6 +13,10 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
         caller: caller,
         options: options
       }) do
+    no_entries_return = Keyword.get(options, :no_entries_return, false)
+
+    options = Keyword.drop(options, [:no_entries_return])
+
     total_entries =
       Keyword.get_lazy(options, :total_entries, fn ->
         total_entries(query, repo, caller, options)
@@ -24,10 +28,19 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
     page_number =
       if allow_overflow_page_number, do: page_number, else: min(total_pages, page_number)
 
+    entries =
+      case no_entries_return do
+        false ->
+          entries(query, repo, page_number, total_pages, page_size, caller, options)
+
+        true ->
+          []
+      end
+
     %Page{
       page_size: page_size,
       page_number: page_number,
-      entries: entries(query, repo, page_number, total_pages, page_size, caller, options),
+      entries: entries,
       total_entries: total_entries,
       total_pages: total_pages
     }
